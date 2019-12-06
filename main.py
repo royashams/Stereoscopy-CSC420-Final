@@ -114,10 +114,15 @@ def OutputRectified(img1, img2, image_name):
 
 # Run the Middlebury Stereo Evaluation SDK
 def RunMiddlebury(img1, img2, image_name):
-    filename = cv2.imread("results/disp0.pfm")
-    plt.imshow(filename)
-    plt.show()
-
+    # In case there are no png files yet in the appropriate directory, write them
+    cv2.imwrite("MiddEval3/alg-ELAS/" + image_name + "_left.png", img1)
+    cv2.imwrite("MiddEval3/alg-ELAS/" + image_name + "_right.png", img2)
+    
+    # I wrote a shell script that will take these two images and run the Middlebury evaluation.
+    subprocess.call(["./middlebury.sh", image_name + "_right.png", image_name + "_left.png", image_name])
+    # Now that the png file is generated, read this black and white image and return.
+    binary_disp = cv2.imread("MiddleburyDisparity/" + image_name +  "_binary_disp.png")
+    return binary_disp
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -152,10 +157,34 @@ if __name__ == '__main__':
         print("Running Disparity Map Generation...")
         first_image = cv2.imread("image_pairs/" + image_name + "_left.jpg", cv2.CV_8UC1)
         second_image = cv2.imread("image_pairs/" + image_name + "_right.jpg", cv2.CV_8UC1)
-        RunMiddlebury(first_image, second_image, image_name)
+        disp_choice = raw_input("Press A to run Middlebury or B to run StereoBM: \n")
+        kernel = int(raw_input("\nChoose an odd number as the kernel size for Gaussian Blur\n"))
+        if disp_choice == "A":
+            print("Running Middlebury using Gaussian Blur kernel of " + str(kernel))
+            # Run the Middlebury script
+            middlebury_disp = RunMiddlebury(first_image, second_image, image_name)
+            plt.imshow(middlebury_disp)
+            plt.show()
+            # Apply a Gaussian kernel over this image
+            middlebury_blur = cv2.GaussianBlur(middlebury_disp,(kernel,kernel),0)
+            cv2.imwrite("Blurred/middlebury_" + image_name + ".jpg",middlebury_blur)
+            plt.imshow(middlebury_blur)
+            plt.show()
+            print("Done! Check the output in /Blurred or /MiddleburyDisparity")
 
-        # Run the middlebury script 
-
+        elif disp_choice == "B":
+            print("Running StereoBM using Gaussian Blur kernel of " + str(kernel))
+            stereo = cv2.StereoBM_create(numDisparities=16, blockSize=7)
+            stereoBM_disp = stereo.compute(second_image, first_image)
+            cv2.imwrite("StereoBM_Disparity/_" + image_name + "_disp.png", stereoBM_disp)
+            plt.imshow(stereoBM_disp, 'gray')
+            plt.show()
+            # Apply a Gaussian kernel over this image
+            stereoBM_blur = cv2.GaussianBlur(stereoBM_disp,(kernel,kernel),0)
+            cv2.imwrite("Blurred/stereoBM_" + image_name + ".jpg", stereoBM_blur)
+            plt.imshow(stereoBM_blur, 'gray')
+            plt.show()
+            print("Done! Check the output in /Blurred or /StereoBM_Disparity")
     else:
         print("Error: Please choose 1 for Anaglyphs or 2 for Disparity Map Generation.")
     
