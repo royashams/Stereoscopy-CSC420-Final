@@ -11,6 +11,6 @@ Final project for CSC420 introduction to computer vision course at the Universit
 
 ## Important Notes
 - Before running the Middlebury Evaluation, make sure that `imagemagick` is installed. 
-- Video and blenderfiles of final results using disparity are in 3D_model_results.
+- Video and blender files of final results using disparity are in 3D_model_results.
 
 Enjoy! :)
